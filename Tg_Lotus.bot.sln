@@ -1,25 +1,239 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36414.22 d17.14
-MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tg_Lotus.bot", "Tg_Lotus.bot\Tg_Lotus.bot.csproj", "{36056CA7-1385-478E-9114-C524C6028FBD}"
-EndProject
-Global
-	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{36056CA7-1385-478E-9114-C524C6028FBD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{36056CA7-1385-478E-9114-C524C6028FBD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{36056CA7-1385-478E-9114-C524C6028FBD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{36056CA7-1385-478E-9114-C524C6028FBD}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {96B69D50-8D5C-4BC0-828C-F1E6C8EA42F4}
-	EndGlobalSection
-EndGlobal
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using Telegram.Bot;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+
+namespace GeniusStartupBot
+{
+    class Program
+    {
+        private static readonly string BotToken = "7999727437:AAFWgt86p5ZzTCYSMy8tFKau9dKELuUW-_M";
+        private static readonly TelegramBotClient BotClient = new TelegramBotClient(BotToken);
+
+        // Основные списки
+        private static readonly string[] Problems = {
+            "люди не могут найти носки по утрам",
+            "кофе остывает слишком быстро",
+            "коты игнорируют своих хозяев",
+            "люди боятся темноты в холодильнике",
+            "слишком много времени тратится на выбор фильма",
+            "бананы быстро портятся",
+            "люди забывают, как дышать во сне",
+            "слишком много свободного времени у пингвинов"
+        };
+
+        private static readonly string[] Solutions = {
+            "умные носки с GPS",
+            "термокружка с ИИ",
+            "робот-кот с голосом Моргана Фримена",
+            "холодильник с ночником и Spotify",
+            "нейросеть, которая выбирает за тебя",
+            "антиоксидантный спрей для бананов",
+            "умная подушка с дыхательным тренером",
+            "социальная сеть для пингвинов"
+        };
+
+        private static readonly string[] Monetizations = {
+            "с подпиской на NFT-носок",
+            "и премиум-доступом к 'идеальной температуре'",
+            "за $999 в месяц",
+            "через криптовалюту 'BananaCoin'",
+            "с виртуальным питомцем в метавселенной",
+            "и франшизой в каждом аэропорту",
+            "через донаты на Patreon 'Дыши со мной'",
+            "с рекламой от Coca-Cola для пингвинов"
+        };
+
+        // Новые списки
+        private static readonly string[] StartupNames = {
+            "SockAI", "DarkFridge", "BananaShield", "PenguinLink", "Breathify", "CineMood", "NFT Socks", "MorganCat"
+        };
+
+        private static readonly string[] Slogans = {
+            "Because your socks have feelings too.",
+            "Your fridge sees you at 3 AM. And judges you.",
+            "Bananas deserve a second chance.",
+            "Dating for penguins. Finally.",
+            "Breathe like Elon. Sleep like a rock.",
+            "AI that picks your movie — and your therapist."
+        };
+
+        private static readonly string[] InvestorReactions = {
+            "🤯 Я вкладываю $10М! Это будущее!",
+            "💸 Мой фонд уже в деле!",
+            "🤨 Интересно... но где метавселенная?",
+            "🙄 Ещё один 'Uber for X'... Ладно, держи $500к.",
+            "🤬 Выгоните этого человека из Silicon Valley!",
+            "💀 Это хуже, чем Juicero.",
+            "🤡 Я бы инвестировал, но у меня закончились деньги на крипто-мартышек.",
+            "🔥 Это либо Nobel Prize, либо тюрьма. Давайте обсудим!"
+        };
+
+        private static readonly string[] MemeCaptions = {
+            "Когда твой стартап оценили в $0, но ты всё ещё веришь в NFT-носки...",
+            "Мой инвестор после питча 'умной подушки с дыханием':",
+            "Как я выгляжу, защищая 'Coca-Cola для пингвинов' на Demo Day:",
+            "TAM/SAM/SOM моего стартапа: TAM = 3 человека, SAM = 1 (я), SOM = 0",
+            "Когда понимаешь, что твой 'AI для выбора фильма' — это `Math.random()`"
+        };
+
+        private static readonly Random Random = new();
+
+        static async Task Main(string[] args)
+        {
+            try
+            {
+                var me = await BotClient.GetMeAsync();
+                Console.WriteLine($"✅ Бот запущен: @{me.Username}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Ошибка при запуске бота: {ex.Message}");
+                return;
+            }
+
+            var offset = 0;
+            while (true)
+            {
+                try
+                {
+                    var updates = await BotClient.GetUpdatesAsync(offset, limit: 100, timeout: 30);
+                    foreach (var update in updates)
+                    {
+                        await HandleUpdateAsync(update);
+                        offset = update.Id + 1;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠️ Ошибка при получении обновлений: {ex.Message}");
+                    await Task.Delay(2000);
+                }
+            }
+        }
+
+        private static async Task HandleUpdateAsync(Update update)
+        {
+            if (update.Message?.Text is not string text)
+                return;
+
+            var chatId = update.Message.Chat.Id;
+            string response = "";
+
+            if (text.StartsWith("/start", StringComparison.OrdinalIgnoreCase))
+            {
+                response = "🚀 Добро пожаловать в «Гениальную Идею»!\n\n" +
+                           "Я генерирую бизнес-идеи, которые либо сделают тебя миллиардером, либо отправят в банкротство.\n\n" +
+                           "Команды:\n" +
+                           "/idea — новая идиотская идея\n" +
+                           "/pitch — питч-дек стартапа\n" +
+                           "/invest — реакция инвестора\n" +
+                           "/rate — оценка идеи\n" +
+                           "/meme — мем про стартап\n" +
+                           "/help — эта справка";
+            }
+            else if (text.StartsWith("/help", StringComparison.OrdinalIgnoreCase))
+            {
+                response = "Команды бота:\n" +
+                           "/idea — 💡 гениальная (идиотская) идея\n" +
+                           "/pitch — 🎤 питч-дек\n" +
+                           "/invest — 💰 реакция инвестора\n" +
+                           "/rate — 📊 оценка (1–10)\n" +
+                           "/meme — 🤡 текст для мема";
+            }
+            else if (text.StartsWith("/idea", StringComparison.OrdinalIgnoreCase))
+            {
+                response = GenerateIdea();
+            }
+            else if (text.StartsWith("/pitch", StringComparison.OrdinalIgnoreCase))
+            {
+                response = GeneratePitch();
+            }
+            else if (text.StartsWith("/invest", StringComparison.OrdinalIgnoreCase))
+            {
+                response = GenerateInvestorReaction();
+            }
+            else if (text.StartsWith("/rate", StringComparison.OrdinalIgnoreCase))
+            {
+                response = RateIdea();
+            }
+            else if (text.StartsWith("/meme", StringComparison.OrdinalIgnoreCase))
+            {
+                response = GenerateMemeCaption();
+            }
+            else
+            {
+                response = "Неизвестная команда. Напиши /help";
+            }
+
+            await BotClient.SendTextMessageAsync(
+    chatId: chatId,
+    text: response,
+    parseMode: ParseMode.Markdown
+);
+        }
+
+        private static string GenerateIdea()
+        {
+            var problem = Problems[Random.Next(Problems.Length)];
+            var solution = Solutions[Random.Next(Solutions.Length)];
+            var monetization = Monetizations[Random.Next(Monetizations.Length)];
+
+            return $"💡 Проблема: {problem}.\n" +
+                   $"🛠 Решение: {solution}.\n" +
+                   $"💰 Монетизация: {monetization}.\n\n" +
+                   "🚀 Эта идея либо сделает тебя миллиардером, либо отправит в банкротство. Удачи!";
+        }
+
+        private static string GeneratePitch()
+        {
+            var name = StartupNames[Random.Next(StartupNames.Length)];
+            var slogan = Slogans[Random.Next(Slogans.Length)];
+            var problem = Problems[Random.Next(Problems.Length)];
+            var solution = Solutions[Random.Next(Solutions.Length)];
+
+            var tam = Random.Next(10, 100) * 1_000_000; // TAM: $10M–$100M
+            var sam = (int)(tam * Random.NextDouble() * 0.5);
+            var som = (int)(sam * Random.NextDouble() * 0.3);
+
+            return $"🎤 **ПИТЧ-ДЕК: {name}**\n\n" +
+                   $"\"{slogan}\"\n\n" +
+                   $"Проблема: {problem}\n" +
+                   $"Решение: {solution}\n\n" +
+                   $"📈 TAM: ${tam:N0}\n" +
+                   $"🎯 SAM: ${sam:N0}\n" +
+                   $"💼 SOM: ${som:N0}\n\n" +
+                   $"🔥 Готовы изменить мир? Инвесторы уже в очереди!";
+        }
+
+        private static string GenerateInvestorReaction()
+        {
+            return "💼 Реакция венчурного инвестора:\n\n" +
+                   InvestorReactions[Random.Next(InvestorReactions.Length)];
+        }
+
+        private static string RateIdea()
+        {
+            var score = Random.Next(1, 11);
+            string comment;
+
+            if (score >= 9) comment = "Это гениально! Или безумие. Или то и другое.";
+            else if (score >= 6) comment = "С потенциалом... если забыть про логику.";
+            else if (score >= 3) comment = "Хм. Может, в параллельной вселенной?";
+            else comment = "Это не идея. Это крик души.";
+
+            return $"📊 Оценка идеи: {score}/10\n\n{comment}";
+        }
+
+        private static string GenerateMemeCaption()
+        {
+            return "🖼️ Текст для мема:\n\n" +
+                   $"\"{MemeCaptions[Random.Next(MemeCaptions.Length)]}\"";
+        }
+    }
+}
+
